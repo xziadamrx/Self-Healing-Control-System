@@ -38,9 +38,9 @@ for sim = 1:num_simulations
     final_current_arr = normal_params.current;
 
     %% 2) Introduce Faults & Apply Adjustments
-    for k = floor(nSteps/2):nSteps-1
+    for k = floor(nSteps/2):nSteps
         % Apply a random fault scale factor
-        fault_scale = 1 + 0.4 * randn();
+        fault_scale = 1 + 0.3 * randn();
         voltage_arr(k) = normal_params.voltage(k) * fault_scale;
         current_arr(k) = normal_params.current(k) * fault_scale;
         
@@ -53,15 +53,17 @@ for sim = 1:num_simulations
             correction_factor = correction_factor * 0.8;
         end
         
-        % Check for high temperature fault
         if temperature_arr(k) > 80
-            correction_factor = correction_factor * 0.8;
-        end
-        
-        % Check for high vibration fault
-        if vibration_arr(k) > 3
-            correction_factor = correction_factor * 0.8;
-        end
+        fprintf('Warning: High temperature at %.2f s!\n', time(k));
+        correction_factor = correction_factor * 0.8; 
+    end
+
+    % Check for high vibration fault and adjust the correction factor
+    if vibration_arr(k) > 3
+        fprintf('Warning: High vibration at %.2f s!\n', time(k));
+        correction_factor = correction_factor * 0.8; 
+    end
+
         
         % Prevent excessive correction
         correction_factor = max(correction_factor, 0.5);
@@ -72,7 +74,7 @@ for sim = 1:num_simulations
     end
 
     %% 3) Compute Overall Fault Probability using Bayesian Inference
-    for k = floor(nSteps/2):nSteps-1
+    for k = floor(nSteps/2):nSteps
         measured.voltage     = final_voltage_arr(k);
         measured.current     = final_current_arr(k);
         measured.temperature = temperature_arr(k);
@@ -176,7 +178,7 @@ function prob = compute_fault_probability(measured, normal_params, std_dev, P_no
         measured.vibration    - normal_params.vibration          ...
     ]);
     
-    thresholds = [std_dev.voltage, std_dev.current, std_dev.temperature, std_dev.vibration] * 2;
+    thresholds = [std_dev.voltage, std_dev.current, std_dev.temperature, std_dev.vibration] ;
     
     likelihood_normal_total = 1;
     for i = 1:4
